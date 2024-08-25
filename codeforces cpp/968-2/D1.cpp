@@ -427,14 +427,14 @@ vector<vector<T>> multMatrix(vector<vector<T>> a, vector<vector<T>> b) {
 }
 
 
-//not working
 void sol() {
     int n, m;
     cin >> n >> m;
-    vector<pair<int,int>> pares(n);
     vector<int> a;
     map<int, int> padres;
+    int lastModified = 0;
     for(int i = 0;i < n;i++) {
+        pair<int, int> p;
         int l;
         int foundFirst = 0;
         cin >> l;
@@ -443,17 +443,16 @@ void sol() {
         sort(all(a));
         int next = 0;
         for(int j = 0;j < l;j++) {
-            cout << a[j] << " " << next << nl;
             if(a[j] == next) {
                 next++;
             }
             if(a[j] > next) {
                 if(foundFirst == 1) {
-                    pares[i].fi = next;
+                    p.fi = next;
                     foundFirst = 2;
                     break;
                 } else {
-                    pares[i].se = next++;
+                    p.se = next++;
                     foundFirst = 1;
                     j--;
                 }
@@ -461,12 +460,22 @@ void sol() {
         }
         for(int j = foundFirst;j < 2;j++) {
             if(j == 0) {
-                pares[i].se = a[l - 1] + 1;
+                p.se = a[l - 1] + 1;
             } else {
-                pares[i].fi = a[l - 1] + (2 - foundFirst);
+                p.fi = a[l - 1] + (2 - foundFirst);
             }
         }
+        lastModified = max(lastModified, p.first);
     }
+    ll ans;
+    if(m > lastModified) {
+        ans = lastModified * (lastModified + 1);
+        ll ml = m;
+        ans += (ml + 1) * ml / 2 - ((lastModified + 1) * lastModified / 2);
+    } else {
+        ans = lastModified * (m + 1);
+    }
+    cout << ans << nl;
 }
 
 int main() {
