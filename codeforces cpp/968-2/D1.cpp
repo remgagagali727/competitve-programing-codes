@@ -427,12 +427,13 @@ vector<vector<T>> multMatrix(vector<vector<T>> a, vector<vector<T>> b) {
 }
 
 
+
 void sol() {
     int n, m;
     cin >> n >> m;
     vector<int> a;
     map<int, int> padres;
-    int lastModified = 0;
+    lll lastModified = 0;
     for(int i = 0;i < n;i++) {
         pair<int, int> p;
         int l;
@@ -465,17 +466,17 @@ void sol() {
                 p.fi = a[l - 1] + (2 - foundFirst);
             }
         }
-        lastModified = max(lastModified, p.first);
+        lastModified = max(lastModified, (lll)p.first);
     }
-    ll ans;
+    lll ans;
     if(m > lastModified) {
-        ans = lastModified * (lastModified + 1);
-        ll ml = m;
-        ans += (ml + 1) * ml / 2 - ((lastModified + 1) * lastModified / 2);
+        lll ml = m;
+        ans = (ml + 1) * ml / 2 + ((lastModified + 1) * lastModified / 2);
     } else {
         ans = lastModified * (m + 1);
     }
-    cout << ans << nl;
+    ll ci = (ll) ans;
+    cout << ci << nl;
 }
 
 int main() {
