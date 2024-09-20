@@ -18,22 +18,32 @@
 #define ullinf      LONG_LONG_MAX
 #define INF         INT_MAX
 #define in(x,a,b)   x > a && x < b
-#define unqueue(a)  a.front(); a.pop();
-#define unstack(a)  a.top(); a.pop();
 
 using namespace std;
-using namespace __gnu_pbds;
 
 const ll mod = 1000000007;
 const ll modfeo = 998244353;
 
 
-typedef tree<int,
-    null_type,
-    less<int>,
-    rb_tree_tag,
-    tree_order_statistics_node_update
-> ordered_set;
+// template<
+// 	  typename Key,
+// 	  typename Mapped,
+// 	  typename Cmp_Fn = less<Key>,
+// 	  typename Tag = rb_tree_tag,
+// 	  template<
+// 	  typename Const_Node_Iterator,
+// 	  typename Node_Iterator,
+// 	  typename Cmp_Fn_,
+// 	  typename Allocator_ >
+//     class Node_Update = null_node_update,
+//     typename Allocator = allocator<char>
+// > class tree;
+// typedef tree<int,
+//     null_type,
+//     less<int>,
+//     rb_tree_tag,
+//     tree_order_statistics_node_update
+// > ordered_set;
 
 struct FenwickTree {
     vector<int> bit;
@@ -175,10 +185,10 @@ public:
 class Graph{
     public:
     vector<vector<int>> adj;
-    vector<int> valores;
-    vector<vector<vector<int>>> qrry;
-    vector<string> ans;
-    vector<bool> visited;
+    vector<int> d;
+    vector<int> marked;
+    vector<int> p;
+    vector<int> ciclo;
     int n;
     bool biconnected;
 
@@ -186,53 +196,65 @@ class Graph{
         n = _n;
         biconnected = _biconnected;
         adj.resize(n);
-        qrry.resize(n);
-        valores.resize(n);
-        visited.resize(n);
+        d.resize(n, -1);
+        ciclo.resize(n);
+        // p.resize(n);
+        marked.resize(n);
     }
 
-    void setValor(int nV, int oV) {
-        valores[oV] = nV;
-    }
+    // void printBfs(int s, map<int, string> itos) {
+    //     queue<ll> q;
+    //     q.push(s);
+    //     marked[s] = true;
+    //     p[s] = -1;
+    //     d[s] = 0;
+    //     while (!q.empty()) {
+    //         int v = q.front();
+    //         q.pop();
+    //         for (int u : adj[v]) {
+    //             if (!marked[u]) {
+    //                 marked[u] = true;
+    //                 q.push(u);
+    //                 d[u] = d[v] + 1;
+    //                 p[u] = v;
+    //             } else {
 
-    void addQuerry(int v, vector<int> x){
-        qrry[v].pb(x);
-    }
+    //             }
+    //         }
+    //     }
+    // }
 
-    set<int> dfs(int v) {
-        set<int> defaultSet;
-        defaultSet.insert(valores[v]);
-        visited[v] = true;
+    #define INVALID LLONG_MAX
+
+    int dfs(int v, ll ds) {
+        if(marked[v] == 2) return ciclo[v];
+        int ans = INT_MAX;
+        marked[v] = 1;
+        d[v] = ds;
         for(auto u : adj[v]) {
-            if(visited[u]) continue;
-            auto childSet = dfs(u);
-            if(childSet.size() > defaultSet.size()) {
-                childSet.insert(all(defaultSet));
-                defaultSet = move(childSet);
-            } else {
-                defaultSet.insert(all(childSet));
+            if(marked[u] == 0) {
+                ans = min(ans, dfs(u, ds + 1));
+            } else if(marked[u] == 1) {
+                ans = min(d[v] - d[u] + 1, ans);
+                ciclo[u] = ans;
+            } else if(marked[u] == 2) {
+                // cout << ciclo[u] << " " << u <<  nl;
+                ans = ciclo[u];
             }
         }
-        for(auto x : qrry[v]) {
-            int l = x[1], r = x[2] + 1;
-            auto lp = defaultSet.lower_bound(l);
-            auto rp = defaultSet.lower_bound(r);
-            if(lp == rp) {
-                ans[x[0]] = "NO";
-            } else {
-                ans[x[0]] = "YES";
-            }
-        }
-        return defaultSet;
+        marked[v] = 2;
+        ciclo[v] = ans;
+        // cout << ans << " " << v << nl;
+        return ans;
+    }
+
+    void resetMarked() {
+        marked = vector<int>(n);
     }
 
     void add(ll v, ll u) {
         adj[v].pb(u);
         if(biconnected) adj[u].pb(v);
-    }
-
-    void resizeQuerry(int q) {
-        ans.resize(q);
     }
 
 };
@@ -377,6 +399,36 @@ ll getLog2(ll x) {
     else return getLog2(x / 2) + 1;
 }
 
+int nextTrue(vector<bool> v, int i) {
+    for(int j = i + 1;j < v.size();j++) {
+        if(v[j]) return j;
+    }
+    return v.size();
+}
+
+int nextFalse(vector<bool> v, int i) {
+    for(int j = i + 1;j < v.size();j++) {
+        if(!v[j]) return j;
+    }
+    return v.size();
+}
+
+int getLastThatIsMe(vector<ll> a, int i){
+    int yo = a[i];
+    for(int j = i - 1;j >= 0;j--) {
+        if(yo == a[j]) return j;
+    }
+    return -1;
+}
+
+int getLastThatIsMe(vector<int> a, int i){
+    int yo = a[i];
+    for(int j = i - 1;j >= 0;j--) {
+        if(yo == a[j]) return j;
+    }
+    return -1;
+}
+
 lll expBin(lll base, lll exp){
     if(exp == -1) return 0;
     if(exp == 0) return 1;
@@ -434,6 +486,10 @@ vector<vector<T>> expBinM(vector<vector<T>> m, int n) {
     return nm;
 }
 
+ll dist(ll x1, ll y1, ll x2, ll y2) {
+    return pow(abs(x1 - x2), 2) + pow(abs(y1 - y2), 2);
+}
+
 istream& operator>>(istream& in, __int128& num) {
     string input;
     in >> input;
@@ -458,58 +514,134 @@ istream& operator>>(istream& in, __int128& num) {
     return in;
 }
 
-int optCaja(int x, int y, int k) {
-    if(k == 0) return 0;
-    if(y > x) {
-        swap(x, y);
+void imprimir(lll n) {
+    if(n == 1) {
+        cout << 2;
+        return;
     }
-    if(x - y >= k) {
-        return k * y;
+    if(n & 1) {
+        cout << "(2*";
+        imprimir(n - 1);
+        cout << ")";
     } else {
-        k -= (x - y);
-        int aum = k / 2;
-        int ans = (y + 1) * y / 2 + (y - 1) * y / 2 - (y - aum + 1) * (y - aum) / 2 - (y - aum) * (y - aum - 1) / 2;
-        ans += (x - y) * y;
-        if(k & 1) {
-            ans += y - aum;
-        }
-        return ans;
+        cout << "(";
+        imprimir(n / 2);
+        cout << ")^2";
     }
 }
 
-void sol() {
-    int n, k;
-    cin >> n >> k;
-    vector<pair<int, int>> cajas(n);
-    for(int i = 0;i < n;i++) {
-        cin >> cajas[i].first >> cajas[i].second;
-    }
-    vector<vector<ll>> dp(n + 1, vector<ll>(k + 1, LONG_LONG_MAX));
-    dp[0][k] = 0;
-    for(int i = 0;i < n;i++) {
-        auto caja = cajas[i];
-        for(int j = 0;j <= k;j++) {
-            if(dp[i][j] == LONG_LONG_MAX) continue;
-            dp[i + 1][j] = min(dp[i][j], dp[i + 1][j]);
-            if(j == 0) continue;
-            if(caja.first + caja.second == j + 1) {
-                dp[i + 1][0] = min(dp[i + 1][0], dp[i][j] + caja.first * caja.second);
-            } else if(caja.first + caja.second <= j) {
-                dp[i + 1][j - (caja.first + caja.second)] = min(dp[i + 1][j - (caja.first + caja.second)], dp[i][j] + caja.first * caja.second);
-            } else {
-                // cout << j << " ";
-                dp[i + 1][0] = min(dp[i + 1][0], optCaja(caja.first, caja.second, j) + dp[i][j]);
-            }       
+string n, m;
+
+bool check(int mm, int nm) {
+    int nv = 0, mv = 0;
+    int nnm = 1, nmm = 1;
+    for(int i = 0;i < n.size();i++) {
+        nv = nv << 1;
+        if(n[i] == '*') {
+            nv += (nm & nnm?1:0);
+            nnm *= 2;
+        } else if(n[i] == '1') {
+            nv += 1;
         }
     }
-    cout << nl;
-    if(dp[n][0] == LONG_LONG_MAX) cout << -1 << nl;
-    else cout << dp[n][0] << nl;
+    for(int i = 0;i < m.size();i++) {
+        mv = mv << 1;
+        if(m[i] == '*') {
+            mv += (mm & nmm?1:0);
+            nmm *= 2;
+        } else if(m[i] == '1') {
+            mv += 1;
+        }
+        if(mv >= nv) {
+            mv -= nv;
+        }
+    }
+    return mv == 0;
+}
+
+struct aux{
+    int ini, fin;
+    bool dir;
+    aux(int a, int b, bool c) {
+        ini = a;
+        fin = b;
+        dir = c;
+    }
+};
+
+int nextChar(int i, char c, string t) {
+    for(;i < t.size();i++) if(c == t[i]) return i;
+    return i;
+}
+
+void sol() {
+    string s, t;
+    bool posible = true;
+    cin >> s >> t;
+    int n = s.size(), m = t.size();
+    for(int i = n;i < max(n,m);i++) {
+        s.append("{");
+    }
+    for(int i = m;i < max(n,m);i++) {
+        t.append("{");
+    }
+    Hash nor(max(n, m), s);
+    reverse(all(s));
+    Hash rev(max(n, m), s);
+    reverse(all(s));
+    Hash th(max(n, m), t);
+    int j = nextChar(0, t[0], s);
+    aux ini(j, j, false);
+    if(j >= n) posible = false;
+    vector<aux> ans = {ini};
+    if(j == s.size()) posible = false;
+    for(int i = 1;i < m;i++) {
+        ini = ans[ans.size() - 1];
+        int tm = ini.fin - ini.ini + 1;
+        ll hsh = th.check_hash(i - tm, i);
+        int l, r;
+        j = nextChar(0, t[i], s);
+        if(j >= n) posible = false;
+        aux inCaseOfNeeded(j,j,false);
+        bool replace = true;
+        for(;j < n;j = nextChar(j + 1, t[i], s)) {
+            l = j - tm, r = j;
+            if(in(l,-1,n) && in(r,-1,n)) {
+                ll nhash = nor.check_hash(l, r);
+                if(nhash == hsh) {
+                    ans[ans.size() - 1] = aux(l, r, false);
+                    replace = false;
+                    break;
+                }
+            }
+            l = max(n, m) - j - 1 - tm, r = max(n, m) - j - 1;
+            if(in(l,-1 + max(n, m) - n,max(n, m)) && in(r,-1 + max(n, m) - n,max(n, m))) {
+                ll nhash = rev.check_hash(l, r);
+                if(nhash == hsh) {
+                    ans[ans.size() - 1] = aux(j, j + tm, true);
+                    replace = false;
+                    break;
+                }
+            }
+        }
+        if(replace) {
+            ans.pb(inCaseOfNeeded);
+        }
+    }
+    if(posible) {
+        cout << ans.size() << nl;
+        for(auto x : ans) {
+            if(x.dir) cout << x.fin + 1 << " " << x.ini + 1 << nl;
+            else cout << x.ini + 1 << " " << x.fin + 1 << nl;
+        }
+    } else {
+        cout << -1 << nl;
+    }
 }
 
 int main() {
     cin.tie(0); ios_base::sync_with_stdio(false);
     int t = 1;
-    cin >> t;
+    // cin >> t;
     while(t--) sol();
 }

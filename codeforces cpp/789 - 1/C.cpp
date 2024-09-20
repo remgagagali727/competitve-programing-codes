@@ -17,55 +17,34 @@
 #define tswap(a,b)  t = a; a = b; b = t
 #define ullinf      LONG_LONG_MAX
 #define INF         INT_MAX
-#define in(x,a,b)   x > a && x < b
-#define unqueue(a)  a.front(); a.pop();
-#define unstack(a)  a.top(); a.pop();
+#define fi          first
+#define se          second
 
 using namespace std;
-using namespace __gnu_pbds;
 
 const ll mod = 1000000007;
 const ll modfeo = 998244353;
 
 
-typedef tree<int,
-    null_type,
-    less<int>,
-    rb_tree_tag,
-    tree_order_statistics_node_update
-> ordered_set;
-
-struct FenwickTree {
-    vector<int> bit;
-    int n;
-
-    FenwickTree(int n) {
-        this->n = n;
-        bit.resize(n);
-    }
-
-    FenwickTree(vector<int> a) : FenwickTree(a.size()) {
-        for (size_t i = 0; i < a.size(); i++)
-            update(i, a[i]);
-    }
-
-    int qrry(int l, int r){
-        if(l == 0) return qrry(r);
-        return qrry(r) - qrry(l - 1);
-    }
-
-    int qrry(int r) {
-        ll ans = 0;
-        for (; r >= 0; r = (r & (r + 1)) - 1)
-            ans = ans + bit[r];
-        return ans;
-    }
-
-    void update(int idx, int val) {
-        for (; idx < n; idx = idx | (idx + 1))
-            bit[idx] += val;
-    }
-};  
+// template<
+// 	  typename Key,
+// 	  typename Mapped,
+// 	  typename Cmp_Fn = less<Key>,
+// 	  typename Tag = rb_tree_tag,
+// 	  template<
+// 	  typename Const_Node_Iterator,
+// 	  typename Node_Iterator,
+// 	  typename Cmp_Fn_,
+// 	  typename Allocator_ >
+//     class Node_Update = null_node_update,
+//     typename Allocator = allocator<char>
+// > class tree;
+// typedef tree<int,
+//     null_type,
+//     less<int>,
+//     rb_tree_tag,
+//     tree_order_statistics_node_update
+// > ordered_set;
 
 class Flow{
     public:
@@ -174,65 +153,58 @@ public:
 
 class Graph{
     public:
-    vector<vector<int>> adj;
-    vector<int> valores;
-    vector<vector<vector<int>>> qrry;
-    vector<string> ans;
-    vector<bool> visited;
-    int n;
+    vector<vector<vector<ll>>> adj;
+    vector<ll> d;
+    vector<ll> marked;
+    vector<vector<ll>> path;
+    vector<ll> cap;
+    ll n;
     bool biconnected;
 
-    Graph(int _n, bool _biconnected) {
+    Graph(int _n, bool _biconnected, vector<ll> _cap) {
         n = _n;
         biconnected = _biconnected;
         adj.resize(n);
-        qrry.resize(n);
-        valores.resize(n);
-        visited.resize(n);
+        // d.resize(n, -1);
+        path.resize(n);
+        // ciclo.resize(n);
+        cap = _cap;
+        // p.resize(n);
+        marked.resize(n);
     }
 
-    void setValor(int nV, int oV) {
-        valores[oV] = nV;
-    }
-
-    void addQuerry(int v, vector<int> x){
-        qrry[v].pb(x);
-    }
-
-    set<int> dfs(int v) {
-        set<int> defaultSet;
-        defaultSet.insert(valores[v]);
-        visited[v] = true;
+    ll dfs(int v) {
+        auto x = path[v];
+        ll ans = x[x.size() - 1] + x[x.size() - 2] + cap[v];
+        marked[v] = true;
         for(auto u : adj[v]) {
-            if(visited[u]) continue;
-            auto childSet = dfs(u);
-            if(childSet.size() > defaultSet.size()) {
-                childSet.insert(all(defaultSet));
-                defaultSet = move(childSet);
-            } else {
-                defaultSet.insert(all(childSet));
-            }
+            if(marked[u[0]]) continue;
+            ans = max(dfs(u[0]), ans);
         }
-        for(auto x : qrry[v]) {
-            int l = x[1], r = x[2] + 1;
-            auto lp = defaultSet.lower_bound(l);
-            auto rp = defaultSet.lower_bound(r);
-            if(lp == rp) {
-                ans[x[0]] = "NO";
-            } else {
-                ans[x[0]] = "YES";
-            }
-        }
-        return defaultSet;
+        return ans;
     }
 
-    void add(ll v, ll u) {
-        adj[v].pb(u);
-        if(biconnected) adj[u].pb(v);
+    ll setPaths(int v) {
+        ll ans = 0;
+        marked[v] = true;
+        path[v].pb(0); path[v].pb(0);
+        for(auto u : adj[v]) {
+            if(marked[u[0]]) continue;
+            ll r = setPaths(u[0]) - u[1] + cap[u[0]];
+            path[v].pb(r);
+            ans = max(ans, r);
+        }
+        sort(all(path[v]));
+        return ans;
     }
 
-    void resizeQuerry(int q) {
-        ans.resize(q);
+    void resetMarked() {
+        marked = vector<ll>(n);
+    }
+
+    void add(int v, int u, int cap) {
+        adj[v].pb({u, cap});
+        if(biconnected) adj[u].pb({v, cap});
     }
 
 };
@@ -240,7 +212,7 @@ class Graph{
 class Hash{
 private:
     const ll BASE = 71;
-    const ll MOD = 1e9 + 1e5 + 1989;
+    const ll MOD = 1e9 + 1e5 + 1;
 
     void init() {
         b[0] = 1;
@@ -261,13 +233,13 @@ public:
     Hash(int _n, string _s) {
         s = _s;
         n = _n;
-        h.resize(n + 1);
-        b.resize(n);
+        h.resize(n + 1, 0);
+        b.resize(2 * n + 1);
         init();
     }
 
     ll check_hash(int l, int r) {
-        return (((h[r + 1] + MOD - h[l]) % MOD) * b[n - 1 - l]) % MOD;
+        return (((h[r] + MOD - h[l]) % MOD) * b[n - l - 1]) % MOD;
     }
 };
 
@@ -278,6 +250,10 @@ public:
 
     Node(ll _id, ll _val) {id = _id; val = _val;}
 };
+
+#define ALREADY_EXIST 1
+#define ADDED_SUCCESFULLY 0
+#define INVALID_VALUE -1
 
 class Trie{
     public:
@@ -311,7 +287,7 @@ class Trie{
     }
 
     ll insert(ll n){
-        if(n > maxVal) return 0;
+        if(n > maxVal) return INVALID_VALUE;
         ll curNode = 0;
         bool exist = true;
         for(int i = k - 1;i >= 0;i--) {
@@ -324,8 +300,8 @@ class Trie{
             }
             curNode = n.id;
         }
-        if(exist) return 1;
-        return 2;
+        if(exist) return ALREADY_EXIST;
+        return ADDED_SUCCESFULLY;
     }
 
     pair<int, int> getMinXor() {
@@ -377,6 +353,36 @@ ll getLog2(ll x) {
     else return getLog2(x / 2) + 1;
 }
 
+int nextTrue(vector<bool> v, int i) {
+    for(int j = i + 1;j < v.size();j++) {
+        if(v[j]) return j;
+    }
+    return v.size();
+}
+
+int nextFalse(vector<bool> v, int i) {
+    for(int j = i + 1;j < v.size();j++) {
+        if(!v[j]) return j;
+    }
+    return v.size();
+}
+
+int getLastThatIsMe(vector<ll> a, int i){
+    int yo = a[i];
+    for(int j = i - 1;j >= 0;j--) {
+        if(yo == a[j]) return j;
+    }
+    return -1;
+}
+
+int getLastThatIsMe(vector<int> a, int i){
+    int yo = a[i];
+    for(int j = i - 1;j >= 0;j--) {
+        if(yo == a[j]) return j;
+    }
+    return -1;
+}
+
 lll expBin(lll base, lll exp){
     if(exp == -1) return 0;
     if(exp == 0) return 1;
@@ -392,16 +398,16 @@ ll expBinMod(ll base, ll exp){
     if(exp == 0) return 1;
     ll ans = expBinMod(base, exp / 2);
     ans *= ans;
-    ans %= modfeo;
-    if(exp & 1){
-        ans *= base;
-        ans %= modfeo;
+    ans %= mod;
+    if(exp % 2){
+        ans*= base;
+        ans%=mod;
     }
     return ans;
 }
 
 ll invMod(ll x){
-    return expBinMod(x, modfeo - 2);
+    return expBinMod(x, mod - 2);
 }
 
 template <typename T>
@@ -434,6 +440,10 @@ vector<vector<T>> expBinM(vector<vector<T>> m, int n) {
     return nm;
 }
 
+ll dist(ll x1, ll y1, ll x2, ll y2) {
+    return pow(abs(x1 - x2), 2) + pow(abs(y1 - y2), 2);
+}
+
 istream& operator>>(istream& in, __int128& num) {
     string input;
     in >> input;
@@ -458,53 +468,60 @@ istream& operator>>(istream& in, __int128& num) {
     return in;
 }
 
-int optCaja(int x, int y, int k) {
-    if(k == 0) return 0;
-    if(y > x) {
-        swap(x, y);
-    }
-    if(x - y >= k) {
-        return k * y;
-    } else {
-        k -= (x - y);
-        int aum = k / 2;
-        int ans = (y + 1) * y / 2 + (y - 1) * y / 2 - (y - aum + 1) * (y - aum) / 2 - (y - aum) * (y - aum - 1) / 2;
-        ans += (x - y) * y;
-        if(k & 1) {
-            ans += y - aum;
-        }
-        return ans;
-    }
-}
-
 void sol() {
-    int n, k;
-    cin >> n >> k;
-    vector<pair<int, int>> cajas(n);
-    for(int i = 0;i < n;i++) {
-        cin >> cajas[i].first >> cajas[i].second;
+    ll n;
+    cin >> n;
+    map<ll, ll> m;
+    for(ll i = 0;i < n;i++) {
+        ll a; cin >> a;
+        m[a] = i;
     }
-    vector<vector<ll>> dp(n + 1, vector<ll>(k + 1, LONG_LONG_MAX));
-    dp[0][k] = 0;
-    for(int i = 0;i < n;i++) {
-        auto caja = cajas[i];
-        for(int j = 0;j <= k;j++) {
-            if(dp[i][j] == LONG_LONG_MAX) continue;
-            dp[i + 1][j] = min(dp[i][j], dp[i + 1][j]);
-            if(j == 0) continue;
-            if(caja.first + caja.second == j + 1) {
-                dp[i + 1][0] = min(dp[i + 1][0], dp[i][j] + caja.first * caja.second);
-            } else if(caja.first + caja.second <= j) {
-                dp[i + 1][j - (caja.first + caja.second)] = min(dp[i + 1][j - (caja.first + caja.second)], dp[i][j] + caja.first * caja.second);
-            } else {
-                // cout << j << " ";
-                dp[i + 1][0] = min(dp[i + 1][0], optCaja(caja.first, caja.second, j) + dp[i][j]);
-            }       
+    vector<ll> a(n);
+    for(ll i = 0;i < n;i++) cin >> a[i];
+    vector<ll> ciclos(n + 1);
+    vector<bool> v(n);
+    for(ll i = 0;i < n;i++) {
+        if(v[i]) continue;
+        ll ini = i;
+        v[i] = true;
+        ll curr = m[a[i]];
+        ll c = 1;
+        while(ini != curr) {
+            v[curr] = true;
+            c++;
+            curr = m[a[curr]];
+        }
+        if(c & 1) {
+            ciclos[1]++;
+            ciclos[c - 1]++;
+        } else {
+            ciclos[c]++;
         }
     }
-    cout << nl;
-    if(dp[n][0] == LONG_LONG_MAX) cout << -1 << nl;
-    else cout << dp[n][0] << nl;
+    ll l = n / 2;
+    ll r = l + 1;
+    ll ans = 0;
+    for(ll i = 1;i <= n;i++) {
+        ll c = ciclos[i];
+        while(c--) {
+            // cout << l << " " << r << nl;
+            ll dl = l - 0, ul = n + 1 - r;
+            if(i & 1) {
+                if(ul > dl) {
+                    r++;
+                } else {
+                    l--;
+                }
+            }
+            ll hlf = i / 2;
+            ll dif = 2 * (r - l) + (hlf - 1) * 2;
+            r += hlf;
+            l -= hlf;
+            ans += dif * hlf;
+        }
+    }
+    // cout << l << " " << r << nl;
+    cout << ans << nl;
 }
 
 int main() {

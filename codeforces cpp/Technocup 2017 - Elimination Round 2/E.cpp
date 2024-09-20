@@ -377,6 +377,36 @@ ll getLog2(ll x) {
     else return getLog2(x / 2) + 1;
 }
 
+int nextTrue(vector<bool> v, int i) {
+    for(int j = i + 1;j < v.size();j++) {
+        if(v[j]) return j;
+    }
+    return v.size();
+}
+
+int nextFalse(vector<bool> v, int i) {
+    for(int j = i + 1;j < v.size();j++) {
+        if(!v[j]) return j;
+    }
+    return v.size();
+}
+
+int getLastThatIsMe(vector<ll> a, int i){
+    int yo = a[i];
+    for(int j = i - 1;j >= 0;j--) {
+        if(yo == a[j]) return j;
+    }
+    return -1;
+}
+
+int getLastThatIsMe(vector<int> a, int i){
+    int yo = a[i];
+    for(int j = i - 1;j >= 0;j--) {
+        if(yo == a[j]) return j;
+    }
+    return -1;
+}
+
 lll expBin(lll base, lll exp){
     if(exp == -1) return 0;
     if(exp == 0) return 1;
@@ -434,6 +464,10 @@ vector<vector<T>> expBinM(vector<vector<T>> m, int n) {
     return nm;
 }
 
+ll dist(ll x1, ll y1, ll x2, ll y2) {
+    return pow(abs(x1 - x2), 2) + pow(abs(y1 - y2), 2);
+}
+
 istream& operator>>(istream& in, __int128& num) {
     string input;
     in >> input;
@@ -458,58 +492,115 @@ istream& operator>>(istream& in, __int128& num) {
     return in;
 }
 
-int optCaja(int x, int y, int k) {
-    if(k == 0) return 0;
-    if(y > x) {
-        swap(x, y);
+void imprimir(lll n) {
+    if(n == 1) {
+        cout << 2;
+        return;
     }
-    if(x - y >= k) {
-        return k * y;
+    if(n & 1) {
+        cout << "(2*";
+        imprimir(n - 1);
+        cout << ")";
     } else {
-        k -= (x - y);
-        int aum = k / 2;
-        int ans = (y + 1) * y / 2 + (y - 1) * y / 2 - (y - aum + 1) * (y - aum) / 2 - (y - aum) * (y - aum - 1) / 2;
-        ans += (x - y) * y;
-        if(k & 1) {
-            ans += y - aum;
-        }
-        return ans;
+        cout << "(";
+        imprimir(n / 2);
+        cout << ")^2";
     }
 }
 
-void sol() {
-    int n, k;
-    cin >> n >> k;
-    vector<pair<int, int>> cajas(n);
-    for(int i = 0;i < n;i++) {
-        cin >> cajas[i].first >> cajas[i].second;
-    }
-    vector<vector<ll>> dp(n + 1, vector<ll>(k + 1, LONG_LONG_MAX));
-    dp[0][k] = 0;
-    for(int i = 0;i < n;i++) {
-        auto caja = cajas[i];
-        for(int j = 0;j <= k;j++) {
-            if(dp[i][j] == LONG_LONG_MAX) continue;
-            dp[i + 1][j] = min(dp[i][j], dp[i + 1][j]);
-            if(j == 0) continue;
-            if(caja.first + caja.second == j + 1) {
-                dp[i + 1][0] = min(dp[i + 1][0], dp[i][j] + caja.first * caja.second);
-            } else if(caja.first + caja.second <= j) {
-                dp[i + 1][j - (caja.first + caja.second)] = min(dp[i + 1][j - (caja.first + caja.second)], dp[i][j] + caja.first * caja.second);
-            } else {
-                // cout << j << " ";
-                dp[i + 1][0] = min(dp[i + 1][0], optCaja(caja.first, caja.second, j) + dp[i][j]);
-            }       
+string n, m;
+
+bool check(int mm, int nm) {
+    int nv = 0, mv = 0;
+    int nnm = 1, nmm = 1;
+    for(int i = 0;i < n.size();i++) {
+        nv = nv << 1;
+        if(n[i] == '*') {
+            nv += (nm & nnm?1:0);
+            nnm *= 2;
+        } else if(n[i] == '1') {
+            nv += 1;
         }
     }
-    cout << nl;
-    if(dp[n][0] == LONG_LONG_MAX) cout << -1 << nl;
-    else cout << dp[n][0] << nl;
+    for(int i = 0;i < m.size();i++) {
+        mv = mv << 1;
+        if(m[i] == '*') {
+            mv += (mm & nmm?1:0);
+            nmm *= 2;
+        } else if(m[i] == '1') {
+            mv += 1;
+        }
+        if(mv >= nv) {
+            mv -= nv;
+        }
+    }
+    return mv == 0;
+}
+
+struct aux{
+    int ini, fin;
+    bool dir;
+    aux(int a, int b, bool c) {
+        ini = a;
+        fin = b;
+        dir = c;
+    }
+};
+
+int nextChar(int i, char c, string t) {
+    for(;i < t.size();i++) if(c == t[i]) return i;
+    return i;
+}
+
+int nextEmpty(vector<int>& v, int i, int n) {
+    for(;i < n;i++) {
+        if(!v[i]) return i;
+    }
+    return n;
+}
+
+void sol() {
+    int n, s;
+    cin >> n >> s;
+    s--;
+    vector<int> valores(n);
+    ll ans = 0;
+    ll mv = 1;
+    for(int i = 0;i < n;i++) {
+        int a; cin >> a;
+        if(i == s) {
+            if(a) {
+                ans++;
+            }
+            valores[0]++;
+        } else {
+            valores[a]++;
+        }
+    }
+    int i = 0;
+    for(int j = valores[0];j > 1;j--) {
+        i = nextEmpty(valores, i, n);
+        ans++; valores[i] = 1;
+    }
+    for(int j = n - 1;j > 1;j--) {
+        if(valores[j] == 0) continue;
+        while(valores[j]--) {
+            i = nextEmpty(valores, i, n);
+            if(i < j) {
+                valores[i] = 1;
+                ans++;
+            } else {
+                break;
+            }
+        }
+    }
+    cout << ans << nl;
 }
 
 int main() {
     cin.tie(0); ios_base::sync_with_stdio(false);
     int t = 1;
-    cin >> t;
+    // cin >> t;
     while(t--) sol();
+    // for(int i = 0;i < t;i++) sol();
 }

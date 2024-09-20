@@ -458,53 +458,40 @@ istream& operator>>(istream& in, __int128& num) {
     return in;
 }
 
-int optCaja(int x, int y, int k) {
-    if(k == 0) return 0;
-    if(y > x) {
-        swap(x, y);
-    }
-    if(x - y >= k) {
-        return k * y;
-    } else {
-        k -= (x - y);
-        int aum = k / 2;
-        int ans = (y + 1) * y / 2 + (y - 1) * y / 2 - (y - aum + 1) * (y - aum) / 2 - (y - aum) * (y - aum - 1) / 2;
-        ans += (x - y) * y;
-        if(k & 1) {
-            ans += y - aum;
-        }
-        return ans;
-    }
-}
-
 void sol() {
-    int n, k;
-    cin >> n >> k;
-    vector<pair<int, int>> cajas(n);
+    int n;
+    cin >> n;
+    vector<ll> a(2 * n);
+    int zeroIndex = -1;
     for(int i = 0;i < n;i++) {
-        cin >> cajas[i].first >> cajas[i].second;
+        cin >> a[i];
+        if(!a[i]) zeroIndex = i;
+        a[i + n] = a[i];
     }
-    vector<vector<ll>> dp(n + 1, vector<ll>(k + 1, LONG_LONG_MAX));
-    dp[0][k] = 0;
-    for(int i = 0;i < n;i++) {
-        auto caja = cajas[i];
-        for(int j = 0;j <= k;j++) {
-            if(dp[i][j] == LONG_LONG_MAX) continue;
-            dp[i + 1][j] = min(dp[i][j], dp[i + 1][j]);
-            if(j == 0) continue;
-            if(caja.first + caja.second == j + 1) {
-                dp[i + 1][0] = min(dp[i + 1][0], dp[i][j] + caja.first * caja.second);
-            } else if(caja.first + caja.second <= j) {
-                dp[i + 1][j - (caja.first + caja.second)] = min(dp[i + 1][j - (caja.first + caja.second)], dp[i][j] + caja.first * caja.second);
-            } else {
-                // cout << j << " ";
-                dp[i + 1][0] = min(dp[i + 1][0], optCaja(caja.first, caja.second, j) + dp[i][j]);
-            }       
+    stack<pair<ll, ll>> torre;
+    torre.push({0, 0});
+    vector<ll> dp(n);
+    vector<ll> lastIndex(n);
+    lastIndex[0] = 0;
+    for(int i = 1;i < n;i++) {
+        pair<ll, ll> comp = {a[zeroIndex + i],i};
+        auto x = torre.top();
+        while (x > comp) {
+            torre.pop();
+            x = torre.top();
         }
+        torre.push(comp);
+        lastIndex[i] = x.second;
     }
-    cout << nl;
-    if(dp[n][0] == LONG_LONG_MAX) cout << -1 << nl;
-    else cout << dp[n][0] << nl;
+    ll ans = 0;
+    for(int i = 1;i < n;i++) {
+        auto x = lastIndex[i];
+        dp[i] = dp[x] + (i - x) * a[zeroIndex + i];
+        // cout << a[zeroIndex + i] << " " << dp[x] << " " << i - x << " " << dp[i] << nl;;
+        ans = max(dp[i], ans); 
+    }
+    // cout << nl;
+    cout << ans + n << nl;
 }
 
 int main() {

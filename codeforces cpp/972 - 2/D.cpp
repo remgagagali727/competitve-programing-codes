@@ -458,53 +458,49 @@ istream& operator>>(istream& in, __int128& num) {
     return in;
 }
 
-int optCaja(int x, int y, int k) {
-    if(k == 0) return 0;
-    if(y > x) {
-        swap(x, y);
-    }
-    if(x - y >= k) {
-        return k * y;
-    } else {
-        k -= (x - y);
-        int aum = k / 2;
-        int ans = (y + 1) * y / 2 + (y - 1) * y / 2 - (y - aum + 1) * (y - aum) / 2 - (y - aum) * (y - aum - 1) / 2;
-        ans += (x - y) * y;
-        if(k & 1) {
-            ans += y - aum;
-        }
-        return ans;
-    }
-}
-
 void sol() {
-    int n, k;
-    cin >> n >> k;
-    vector<pair<int, int>> cajas(n);
+    string comb = "narek";
+    int n, m;
+    cin >> n >> m;
+    vector<string> st(n);
+    for(int i = 0;i < n;i++)
+        cin >> st[i];
+    vector<int> currForm;
+    ll ans = 0;
+    vector<int> v;
+    vector<pair<vector<int>,vector<int>>> values(n);
     for(int i = 0;i < n;i++) {
-        cin >> cajas[i].first >> cajas[i].second;
+        v = {0, 0, 0, 0, 0};
+        currForm = {0, 1, 2, 3, 4};
+        for(int j = 0;j < m;j++) {
+            char c = st[i][j];
+            if(c == 'n' || c == 'a' || c == 'r' || c == 'e' || c == 'k') {
+                for(int k = 0;k < 5;k++) {
+                    v[k]--;
+                    if(c == comb[currForm[k]]) {
+                        currForm[k]++;
+                        if(currForm[k] == 5) {
+                            currForm[k] = 0;
+                            v[k] += 10;
+                        }
+                    }
+                }
+            }
+        }
+        values[i] = {v,currForm};
     }
-    vector<vector<ll>> dp(n + 1, vector<ll>(k + 1, LONG_LONG_MAX));
-    dp[0][k] = 0;
+    vector<vector<ll>> dp(n + 1, vector<ll>(5, LONG_LONG_MIN));
+    dp[0][0] = 0;
     for(int i = 0;i < n;i++) {
-        auto caja = cajas[i];
-        for(int j = 0;j <= k;j++) {
-            if(dp[i][j] == LONG_LONG_MAX) continue;
-            dp[i + 1][j] = min(dp[i][j], dp[i + 1][j]);
-            if(j == 0) continue;
-            if(caja.first + caja.second == j + 1) {
-                dp[i + 1][0] = min(dp[i + 1][0], dp[i][j] + caja.first * caja.second);
-            } else if(caja.first + caja.second <= j) {
-                dp[i + 1][j - (caja.first + caja.second)] = min(dp[i + 1][j - (caja.first + caja.second)], dp[i][j] + caja.first * caja.second);
-            } else {
-                // cout << j << " ";
-                dp[i + 1][0] = min(dp[i + 1][0], optCaja(caja.first, caja.second, j) + dp[i][j]);
-            }       
+        for(int j = 0;j < 5;j++) {
+            if(dp[i][j] == LONG_LONG_MIN) continue;
+            auto pr = values[i];
+            dp[i + 1][j] = max(dp[i + 1][j], dp[i][j]);
+            dp[i + 1][pr.second[j]] = max(dp[i + 1][pr.second[j]], dp[i][j] + pr.first[j]);
         }
     }
-    cout << nl;
-    if(dp[n][0] == LONG_LONG_MAX) cout << -1 << nl;
-    else cout << dp[n][0] << nl;
+    for(int i = 0;i < 5;i++) ans = max(dp[n][i], ans);
+    cout << ans << nl;
 }
 
 int main() {
@@ -512,4 +508,5 @@ int main() {
     int t = 1;
     cin >> t;
     while(t--) sol();
+    // for(int i = 0;i < t;i++) sol();
 }

@@ -458,53 +458,15 @@ istream& operator>>(istream& in, __int128& num) {
     return in;
 }
 
-int optCaja(int x, int y, int k) {
-    if(k == 0) return 0;
-    if(y > x) {
-        swap(x, y);
-    }
-    if(x - y >= k) {
-        return k * y;
-    } else {
-        k -= (x - y);
-        int aum = k / 2;
-        int ans = (y + 1) * y / 2 + (y - 1) * y / 2 - (y - aum + 1) * (y - aum) / 2 - (y - aum) * (y - aum - 1) / 2;
-        ans += (x - y) * y;
-        if(k & 1) {
-            ans += y - aum;
-        }
-        return ans;
-    }
-}
-
 void sol() {
-    int n, k;
-    cin >> n >> k;
-    vector<pair<int, int>> cajas(n);
-    for(int i = 0;i < n;i++) {
-        cin >> cajas[i].first >> cajas[i].second;
-    }
-    vector<vector<ll>> dp(n + 1, vector<ll>(k + 1, LONG_LONG_MAX));
-    dp[0][k] = 0;
-    for(int i = 0;i < n;i++) {
-        auto caja = cajas[i];
-        for(int j = 0;j <= k;j++) {
-            if(dp[i][j] == LONG_LONG_MAX) continue;
-            dp[i + 1][j] = min(dp[i][j], dp[i + 1][j]);
-            if(j == 0) continue;
-            if(caja.first + caja.second == j + 1) {
-                dp[i + 1][0] = min(dp[i + 1][0], dp[i][j] + caja.first * caja.second);
-            } else if(caja.first + caja.second <= j) {
-                dp[i + 1][j - (caja.first + caja.second)] = min(dp[i + 1][j - (caja.first + caja.second)], dp[i][j] + caja.first * caja.second);
-            } else {
-                // cout << j << " ";
-                dp[i + 1][0] = min(dp[i + 1][0], optCaja(caja.first, caja.second, j) + dp[i][j]);
-            }       
-        }
-    }
-    cout << nl;
-    if(dp[n][0] == LONG_LONG_MAX) cout << -1 << nl;
-    else cout << dp[n][0] << nl;
+    int l, n, m;
+    cin >> l >> n >> m;
+    vector<int> a(l);
+    vector<vector<int>> mx(n, vector<int>(m));
+    int ini = 0;
+    for(int i = 0;i < l;i++) cin >> a[i];
+    for(int i = 0;i < n;i++) for(int j = 0;j < m;j++) cin >> mx[i][j];
+    
 }
 
 int main() {
@@ -512,4 +474,5 @@ int main() {
     int t = 1;
     cin >> t;
     while(t--) sol();
+    // for(int i = 0;i < t;i++) sol();
 }

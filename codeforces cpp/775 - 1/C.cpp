@@ -17,23 +17,34 @@
 #define tswap(a,b)  t = a; a = b; b = t
 #define ullinf      LONG_LONG_MAX
 #define INF         INT_MAX
-#define in(x,a,b)   x > a && x < b
-#define unqueue(a)  a.front(); a.pop();
-#define unstack(a)  a.top(); a.pop();
+#define fi          first
+#define se          second
 
 using namespace std;
-using namespace __gnu_pbds;
 
 const ll mod = 1000000007;
 const ll modfeo = 998244353;
 
 
-typedef tree<int,
-    null_type,
-    less<int>,
-    rb_tree_tag,
-    tree_order_statistics_node_update
-> ordered_set;
+// template<
+// 	  typename Key,
+// 	  typename Mapped,
+// 	  typename Cmp_Fn = less<Key>,
+// 	  typename Tag = rb_tree_tag,
+// 	  template<
+// 	  typename Const_Node_Iterator,
+// 	  typename Node_Iterator,
+// 	  typename Cmp_Fn_,
+// 	  typename Allocator_ >
+//     class Node_Update = null_node_update,
+//     typename Allocator = allocator<char>
+// > class tree;
+// typedef tree<int,
+//     null_type,
+//     less<int>,
+//     rb_tree_tag,
+//     tree_order_statistics_node_update
+// > ordered_set;
 
 struct FenwickTree {
     vector<int> bit;
@@ -175,10 +186,10 @@ public:
 class Graph{
     public:
     vector<vector<int>> adj;
-    vector<int> valores;
-    vector<vector<vector<int>>> qrry;
-    vector<string> ans;
-    vector<bool> visited;
+    vector<int> d;
+    vector<int> marked;
+    vector<int> p;
+    vector<int> ciclo;
     int n;
     bool biconnected;
 
@@ -186,44 +197,60 @@ class Graph{
         n = _n;
         biconnected = _biconnected;
         adj.resize(n);
-        qrry.resize(n);
-        valores.resize(n);
-        visited.resize(n);
+        d.resize(n, -1);
+        ciclo.resize(n);
+        // p.resize(n);
+        marked.resize(n);
     }
 
-    void setValor(int nV, int oV) {
-        valores[oV] = nV;
-    }
+    // void printBfs(int s, map<int, string> itos) {
+    //     queue<ll> q;
+    //     q.push(s);
+    //     marked[s] = true;
+    //     p[s] = -1;
+    //     d[s] = 0;
+    //     while (!q.empty()) {
+    //         int v = q.front();
+    //         q.pop();
+    //         for (int u : adj[v]) {
+    //             if (!marked[u]) {
+    //                 marked[u] = true;
+    //                 q.push(u);
+    //                 d[u] = d[v] + 1;
+    //                 p[u] = v;
+    //             } else {
 
-    void addQuerry(int v, vector<int> x){
-        qrry[v].pb(x);
-    }
+    //             }
+    //         }
+    //     }
+    // }
 
-    set<int> dfs(int v) {
-        set<int> defaultSet;
-        defaultSet.insert(valores[v]);
-        visited[v] = true;
+    #define INVALID LLONG_MAX
+
+    int dfs(int v, ll ds) {
+        if(marked[v] == 2) return ciclo[v];
+        int ans = INT_MAX;
+        marked[v] = 1;
+        d[v] = ds;
         for(auto u : adj[v]) {
-            if(visited[u]) continue;
-            auto childSet = dfs(u);
-            if(childSet.size() > defaultSet.size()) {
-                childSet.insert(all(defaultSet));
-                defaultSet = move(childSet);
-            } else {
-                defaultSet.insert(all(childSet));
+            if(marked[u] == 0) {
+                ans = min(ans, dfs(u, ds + 1));
+            } else if(marked[u] == 1) {
+                ans = min(d[v] - d[u] + 1, ans);
+                ciclo[u] = ans;
+            } else if(marked[u] == 2) {
+                // cout << ciclo[u] << " " << u <<  nl;
+                ans = ciclo[u];
             }
         }
-        for(auto x : qrry[v]) {
-            int l = x[1], r = x[2] + 1;
-            auto lp = defaultSet.lower_bound(l);
-            auto rp = defaultSet.lower_bound(r);
-            if(lp == rp) {
-                ans[x[0]] = "NO";
-            } else {
-                ans[x[0]] = "YES";
-            }
-        }
-        return defaultSet;
+        marked[v] = 2;
+        ciclo[v] = ans;
+        // cout << ans << " " << v << nl;
+        return ans;
+    }
+
+    void resetMarked() {
+        marked = vector<int>(n);
     }
 
     void add(ll v, ll u) {
@@ -231,16 +258,12 @@ class Graph{
         if(biconnected) adj[u].pb(v);
     }
 
-    void resizeQuerry(int q) {
-        ans.resize(q);
-    }
-
 };
 
 class Hash{
 private:
     const ll BASE = 71;
-    const ll MOD = 1e9 + 1e5 + 1989;
+    const ll MOD = 1e9 + 1e5 + 1;
 
     void init() {
         b[0] = 1;
@@ -261,13 +284,13 @@ public:
     Hash(int _n, string _s) {
         s = _s;
         n = _n;
-        h.resize(n + 1);
-        b.resize(n);
+        h.resize(n + 1, 0);
+        b.resize(2 * n + 1);
         init();
     }
 
     ll check_hash(int l, int r) {
-        return (((h[r + 1] + MOD - h[l]) % MOD) * b[n - 1 - l]) % MOD;
+        return (((h[r] + MOD - h[l]) % MOD) * b[n - l - 1]) % MOD;
     }
 };
 
@@ -278,6 +301,10 @@ public:
 
     Node(ll _id, ll _val) {id = _id; val = _val;}
 };
+
+#define ALREADY_EXIST 1
+#define ADDED_SUCCESFULLY 0
+#define INVALID_VALUE -1
 
 class Trie{
     public:
@@ -311,7 +338,7 @@ class Trie{
     }
 
     ll insert(ll n){
-        if(n > maxVal) return 0;
+        if(n > maxVal) return INVALID_VALUE;
         ll curNode = 0;
         bool exist = true;
         for(int i = k - 1;i >= 0;i--) {
@@ -324,8 +351,8 @@ class Trie{
             }
             curNode = n.id;
         }
-        if(exist) return 1;
-        return 2;
+        if(exist) return ALREADY_EXIST;
+        return ADDED_SUCCESFULLY;
     }
 
     pair<int, int> getMinXor() {
@@ -375,6 +402,36 @@ ll countOnes(string s) {
 ll getLog2(ll x) {
     if(x <= 1) return 0;
     else return getLog2(x / 2) + 1;
+}
+
+int nextTrue(vector<bool> v, int i) {
+    for(int j = i + 1;j < v.size();j++) {
+        if(v[j]) return j;
+    }
+    return v.size();
+}
+
+int nextFalse(vector<bool> v, int i) {
+    for(int j = i + 1;j < v.size();j++) {
+        if(!v[j]) return j;
+    }
+    return v.size();
+}
+
+int getLastThatIsMe(vector<ll> a, int i){
+    int yo = a[i];
+    for(int j = i - 1;j >= 0;j--) {
+        if(yo == a[j]) return j;
+    }
+    return -1;
+}
+
+int getLastThatIsMe(vector<int> a, int i){
+    int yo = a[i];
+    for(int j = i - 1;j >= 0;j--) {
+        if(yo == a[j]) return j;
+    }
+    return -1;
 }
 
 lll expBin(lll base, lll exp){
@@ -434,6 +491,10 @@ vector<vector<T>> expBinM(vector<vector<T>> m, int n) {
     return nm;
 }
 
+ll dist(ll x1, ll y1, ll x2, ll y2) {
+    return pow(abs(x1 - x2), 2) + pow(abs(y1 - y2), 2);
+}
+
 istream& operator>>(istream& in, __int128& num) {
     string input;
     in >> input;
@@ -458,58 +519,101 @@ istream& operator>>(istream& in, __int128& num) {
     return in;
 }
 
-int optCaja(int x, int y, int k) {
-    if(k == 0) return 0;
-    if(y > x) {
-        swap(x, y);
+void imprimir(lll n) {
+    if(n == 1) {
+        cout << 2;
+        return;
     }
-    if(x - y >= k) {
-        return k * y;
+    if(n & 1) {
+        cout << "(2*";
+        imprimir(n - 1);
+        cout << ")";
     } else {
-        k -= (x - y);
-        int aum = k / 2;
-        int ans = (y + 1) * y / 2 + (y - 1) * y / 2 - (y - aum + 1) * (y - aum) / 2 - (y - aum) * (y - aum - 1) / 2;
-        ans += (x - y) * y;
-        if(k & 1) {
-            ans += y - aum;
-        }
-        return ans;
+        cout << "(";
+        imprimir(n / 2);
+        cout << ")^2";
     }
 }
 
-void sol() {
-    int n, k;
-    cin >> n >> k;
-    vector<pair<int, int>> cajas(n);
-    for(int i = 0;i < n;i++) {
-        cin >> cajas[i].first >> cajas[i].second;
-    }
-    vector<vector<ll>> dp(n + 1, vector<ll>(k + 1, LONG_LONG_MAX));
-    dp[0][k] = 0;
-    for(int i = 0;i < n;i++) {
-        auto caja = cajas[i];
-        for(int j = 0;j <= k;j++) {
-            if(dp[i][j] == LONG_LONG_MAX) continue;
-            dp[i + 1][j] = min(dp[i][j], dp[i + 1][j]);
-            if(j == 0) continue;
-            if(caja.first + caja.second == j + 1) {
-                dp[i + 1][0] = min(dp[i + 1][0], dp[i][j] + caja.first * caja.second);
-            } else if(caja.first + caja.second <= j) {
-                dp[i + 1][j - (caja.first + caja.second)] = min(dp[i + 1][j - (caja.first + caja.second)], dp[i][j] + caja.first * caja.second);
-            } else {
-                // cout << j << " ";
-                dp[i + 1][0] = min(dp[i + 1][0], optCaja(caja.first, caja.second, j) + dp[i][j]);
-            }       
+string n, m;
+
+bool check(int mm, int nm) {
+    int nv = 0, mv = 0;
+    int nnm = 1, nmm = 1;
+    for(int i = 0;i < n.size();i++) {
+        nv = nv << 1;
+        if(n[i] == '*') {
+            nv += (nm & nnm?1:0);
+            nnm *= 2;
+        } else if(n[i] == '1') {
+            nv += 1;
         }
     }
-    cout << nl;
-    if(dp[n][0] == LONG_LONG_MAX) cout << -1 << nl;
-    else cout << dp[n][0] << nl;
+    for(int i = 0;i < m.size();i++) {
+        mv = mv << 1;
+        if(m[i] == '*') {
+            mv += (mm & nmm?1:0);
+            nmm *= 2;
+        } else if(m[i] == '1') {
+            mv += 1;
+        }
+        if(mv >= nv) {
+            mv -= nv;
+        }
+    }
+    return mv == 0;
+}
+
+const int maxval = 200'001;
+
+void sol() {
+    int n, m;
+    ll acum = 1;
+    cin >> n >> m;
+    vector<ll> fact(n + 1);
+    fact[0] = fact[1] = 1;
+    for(int i = 2;i <= n;i++) {
+        fact[i] = fact[i - 1] * i;
+        fact[i] %= modfeo;
+    }
+    vector<int> freq(maxval + 1);
+    vector<int> t(m);
+    for(int i = 0;i < n;i++) {
+        int a; cin >> a;
+        freq[a]++;
+        acum *= freq[a];
+        acum %= modfeo;
+    }
+    FenwickTree ft(freq);
+    for(int i = 0;i < m;i++) cin >> t[i];
+    ll ans = 0;
+    for(int i = 0;i < m;i++) {
+        if(i == n) {
+            ans++;
+            break;
+        }
+        int last = t[i];
+        ll racum = fact[n - i - 1];
+        racum *= ft.qrry(last - 1);
+        racum %= modfeo;
+        racum *= invMod(acum);
+        racum %= modfeo;
+        ans += racum;
+        if(ans >= modfeo) ans %= modfeo;
+        int f = ft.qrry(last, last);
+        if(f == 0) {
+            break;
+        }
+        acum *= invMod(f);
+        acum %= modfeo;
+        ft.update(last, -1);
+    }
+    cout << ans % modfeo << nl;
 }
 
 int main() {
     cin.tie(0); ios_base::sync_with_stdio(false);
     int t = 1;
-    cin >> t;
+    // cin >> t;
     while(t--) sol();
 }
